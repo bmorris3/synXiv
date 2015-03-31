@@ -1,0 +1,3 @@
+outputdir /Users/bmorris/Dropbox/synXiv/
+subdomain astro-ph.EP
+datestr %Y%m%d

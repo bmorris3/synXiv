@@ -1,29 +1,42 @@
 '''
-Run with:
+synXiv: arXiv -> Terminal -> Dropbox
 
-osascript -e 'tell app "Terminal" to do script "python ~/git/synXiv/synXiv.py"'
+Run each morning to: 
+1) See new papers (title/author/abstract) in your subfield
+2) Choose if you'd like to download the PDF
+3) Download PDFs to your Dropbox folder
 
+then sync your tablet/phone's Dropbox folder and head out the door!
 
+The script is intended to be run on Mac OS X with a cron job like this: 
+    # 7:20am on weekdays
+    20 7 * * 1-5 osascript -e 'tell app "Terminal" to do script "python /your/path/to/synXiv.py"'
 
-Cron job: 
-# 7:20 on weekdays
-20 7 * * 1-5 osascript -e 'tell app "Terminal" to do script "python ~/git/synXiv/synXiv.py"'
+You can run it from Terminal with:
+    osascript -e 'tell app "Terminal" to do script "python /your/path/to/synXiv.py"'
+
 '''
 from urllib import urlopen
 from datetime import datetime
+import os
 
-newURL = 'http://arxiv.org/list/astro-ph.EP/new?skip=0&show=1000'
-new = urlopen(newURL).read().splitlines()
-#with open('tmp.txt','w') as f:
-#    f.write(tmp)
-#with open('tmp.txt','r') as f:
-#    new = f.read().splitlines()
-
+# Load input parameters from 'params.txt' file
+paramspath = os.path.join(os.path.dirname(__file__),'params.txt')
+with open(paramspath,'r') as f:
+    params = f.read().splitlines()
+    
+# Which astro-ph sub-domain to read from:
+subdomain = [line.split()[1] for line in params if line.startswith('subdomain')][0]
 # Where to put the data:
-outputdir = '/Users/bmorris/Dropbox/synXiv/'
+outputdir = [line.split()[1] for line in params if line.startswith('outputdir')][0]
+# How to format the date in the PDF output name
+datestr = [line.split()[1] for line in params	 if line.startswith('datestr') ][0]
+
+newURL = 'http://arxiv.org/list/{0}/new?skip=0&show=1000'.format(subdomain)
+new = urlopen(newURL).read().splitlines()
 
 # Current date: 
-currentyear = datetime.now().strftime('%Y')
+currentyear = datetime.now().strftime(datestr)
 
 # Don't include replacements: 
 replacementsline = [i for i in range(len(new)) if 
@@ -77,7 +90,6 @@ authorlist = getauthorlist(openauthors, closeauthors)
 titlelist = map(gettitles, titlelines)
 abstracts = getabstracts(openabstracts, closeabstracts)
 PDFlinks = getPDFlinks(PDFlines)
-#savePDFs = [False, False, False]
 
 def downloadPDF(PDFlinks, authorlist, savePDFs):
     for url, authors, save in zip(PDFlinks, authorlist, savePDFs):
