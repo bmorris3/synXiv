@@ -39,9 +39,11 @@ new = urlopen(newURL).read().splitlines()
 currentyear = datetime.now().strftime(datestr)
 
 # Don't include replacements: 
-replacementsline = [i for i in range(len(new)) if 
-                    new[i].startswith('<h3>Replacements')][0]
-new = new[:replacementsline]
+startreplacements = '<h3>Replacements'
+if startreplacements in ' '.join(new):
+    replacementsline = [i for i in range(len(new)) if 
+                        new[i].startswith(startreplacements)][0]
+    new = new[:replacementsline]
 
 # Get indices for references:
 allindices = range(len(new))
@@ -96,8 +98,8 @@ def downloadPDF(PDFlinks, authorlist, savePDFs):
         if save:
             firstauthor = authors[0]
             lastname = firstauthor.split(' ')[-1]
+            outfilepath = outputdir+'{0}{1}.pdf'.format(currentyear, lastname)
             raw = urlopen(url)
-            outfilepath = outputdir+'{0}{1}.pdf'.format(lastname, currentyear)
             print 'Saving: {0}'.format(outfilepath)
             with open(outfilepath, 'wb') as f:
                 f.write(raw.read())
@@ -112,6 +114,8 @@ for title, authors, abstract in zip(titlelist, authorlist, abstracts):
                 ', '.join(authors),
                  abstract)
     save = raw_input('Pull to Dropbox? (0) No, (1) Yes: ')
+    if save not in ['0', '1']: 
+        save = '0'
     savePDFs.append(int(save))
 
 downloadPDF(PDFlinks, authorlist, savePDFs)
